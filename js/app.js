@@ -243,7 +243,7 @@ async function iniciar() {
   renderizarCarrinho();
 
   // Campanha Black Friday (RET-203): contador já implementado na sprint 14.
-  // if (CONFIG.blackFriday.ativa) iniciarContador(CONFIG.blackFriday);
+  if (CONFIG.blackFriday.ativa) iniciarContador(CONFIG.blackFriday);
 
   renderizarFiltros();
   renderizarCatalogo();
