@@ -12,9 +12,9 @@ function formatarBRL(valor) {
   return BRL.format(valor);
 }
 
-/* Preço efetivamente cobrado de um jogo */
+/* Preços centralizados: a vitrine e o carrinho usam a mesma regra. */
 function precoDe(jogo) {
-  return jogo.preco;
+  return Precos.calcular(jogo, CONFIG);
 }
 
 /* ---------------- Carregamento ---------------- */
@@ -42,15 +42,18 @@ function renderizarDestaque(jogo) {
       <h2>${jogo.titulo}</h2>
       <p>${jogo.descricao}</p>
       <p class="destaque-meta">${jogo.genero} · ${jogo.ano} · ${jogo.condicao}</p>
+      <p class="destaque-preco">${precoDe(jogo).descontoPercentual
+        ? `<s>${formatarBRL(precoDe(jogo).precoOriginal)}</s> <strong class="preco-promo">${formatarBRL(precoDe(jogo).precoFinal)}</strong> <span class="selo-promo">-${precoDe(jogo).descontoPercentual}%</span>`
+        : `<strong>${formatarBRL(precoDe(jogo).precoFinal)}</strong>`}</p>
       <button class="botao" data-adicionar="${jogo.id}">Adicionar ao carrinho</button>
     </div>`;
 }
 
 function criarCard(jogo) {
-  const final = precoDe(jogo);
-  const precoHtml = final < jogo.preco
-    ? `<s>${formatarBRL(jogo.preco)}</s> <strong class="preco-promo">${formatarBRL(final)}</strong>`
-    : `<strong>${formatarBRL(final)}</strong>`;
+  const preco = precoDe(jogo);
+  const precoHtml = preco.descontoPercentual
+    ? `<s>${formatarBRL(preco.precoOriginal)}</s> <strong class="preco-promo">${formatarBRL(preco.precoFinal)}</strong>`
+    : `<strong>${formatarBRL(preco.precoFinal)}</strong>`;
 
   const card = document.createElement('article');
   card.className = 'card';
@@ -58,7 +61,7 @@ function criarCard(jogo) {
   card.innerHTML = `
     <div class="card-capa">
       <img src="${urlCapa(jogo)}" alt="Capa de ${jogo.titulo}" loading="lazy">
-      ${final < jogo.preco ? `<span class="selo-promo">-${Math.round((1 - final / jogo.preco) * 100)}%</span>` : ''}
+      ${preco.descontoPercentual ? `<span class="selo-promo">-${preco.descontoPercentual}%</span>` : ''}
     </div>
     <div class="card-corpo">
       <h3>${jogo.titulo}</h3>
@@ -128,7 +131,7 @@ function removerDoCarrinho(id) {
 function totalCarrinho() {
   let total = 0;
   for (const { jogo, quantidade } of carrinho.values()) {
-    total += precoDe(jogo) * quantidade;
+    total += precoDe(jogo).precoFinal * quantidade;
   }
   return Math.round(total * 100) / 100;
 }
@@ -143,7 +146,11 @@ function renderizarCarrinho() {
     ? itens.map(({ jogo, quantidade }) => `
         <li>
           <img src="${urlCapa(jogo)}" alt="">
-          <div><strong>${jogo.titulo}</strong><br>${quantidade} × ${formatarBRL(precoDe(jogo))}</div>
+          <div><strong>${jogo.titulo}</strong><br>${quantidade} × ${
+            precoDe(jogo).descontoPercentual
+              ? `<s>${formatarBRL(precoDe(jogo).precoOriginal)}</s> <strong class="preco-promo">${formatarBRL(precoDe(jogo).precoFinal)}</strong>`
+              : formatarBRL(precoDe(jogo).precoFinal)
+          }</div>
           <button class="remover" data-remover="${jogo.id}" aria-label="Remover">✕</button>
         </li>`).join('')
     : '<li class="vazio">Seu carrinho está vazio.</li>';
@@ -235,7 +242,7 @@ async function iniciar() {
   renderizarDestaque(JOGOS[0]);
   renderizarCarrinho();
 
-  // Campanha Black Friday (RET-203): remova as duas barras da linha abaixo para ligar o contador
+  // Campanha Black Friday (RET-203): contador já implementado na sprint 14.
   // if (CONFIG.blackFriday.ativa) iniciarContador(CONFIG.blackFriday);
 
   renderizarFiltros();
